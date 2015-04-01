@@ -10,6 +10,7 @@ import QtGraphicalEffects 1.0
 import Ubuntu.Components 1.1
 import Ubuntu.Components.ListItems 1.0
 import Ubuntu.Components.Popups 1.0
+import Ubuntu.Content 1.0
 import Epub 1.0
 
 import "components"
@@ -624,6 +625,17 @@ Page {
             },
 
             Action {
+                text: i18n.tr("Open Book")
+                iconName: "view-expand"
+                onTriggered: {
+                    var page = pageStack.push(contentPeerComponent)
+                    page.peerSelected.connect(function(peer) {
+                        activeTransfer = peer.request();
+                    })
+                }
+            },
+
+            Action {
                 text: i18n.tr("Settings")
                 iconName: "settings"
                 onTriggered: PopupUtils.open(writablehome ? settingsComponent : settingsDisabledComponent)
@@ -632,6 +644,38 @@ Page {
 
         sections {
             model: [i18n.tr("Recently Read"), i18n.tr("Title"), i18n.tr("Author")]
+        }
+    }
+
+    property var activeTransfer: null
+    Connections {
+        target: activeTransfer
+
+        onStateChanged: {
+            if (activeTransfer.state === ContentTransfer.Charged) {
+                print("should process import file:", activeTransfer.items[0].url)
+            }
+        }
+    }
+
+    Component {
+        id: contentPeerComponent
+        Page {
+            id: contentPeerPickerPage
+
+            signal peerSelected(var peer)
+
+            ContentPeerPicker {
+                anchors.fill: parent
+                contentType: ContentType.Documents
+                handler: ContentHandler.Source
+
+                onPeerSelected: {
+                    contentPeerPickerPage.peerSelected(peer);
+                    pageStack.pop();
+                }
+                onCancelPressed: pageStack.pop()
+            }
         }
     }
 
